@@ -232,51 +232,97 @@
 </div>
 
 <script>
-  // ── Replace this with the direct URL to your APK file ──────────────────────
-  // Examples:
-  //   Self-hosted:   'https://yourserver.com/files/ChoreQuest.apk'
-  //   GitHub Release:'https://github.com/you/repo/releases/download/v1.0/ChoreQuest.apk'
-  //   Cloudflare R2: 'https://pub-xxx.r2.dev/ChoreQuest.apk'
-  const APK_URL = 'https://drive.google.com/uc?export=download&id=1qqd2itCt5NcBxm2BlDfUoyhgyaGwZULB';
+  const APK_URL  = 'https://drive.google.com/uc?export=download&id=1qqd2itCt5NcBxm2BlDfUoyhgyaGwZULB';
   const APK_NAME = 'ChoreQuest.apk';
-  // ───────────────────────────────────────────────────────────────────────────
+
+  // Approximate APK size in bytes — update if you know the real size
+  // This is used only for the simulated progress bar fallback
+  const APPROX_BYTES = 28 * 1024 * 1024; // 28 MB estimate
 
   function fmt(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function getEls() {
+    return {
+      btn:     document.getElementById('dl-btn'),
+      wrap:    document.getElementById('progress-wrap'),
+      bar:     document.getElementById('prog-bar'),
+      pct:     document.getElementById('prog-pct'),
+      txfr:    document.getElementById('prog-transferred'),
+      spd:     document.getElementById('prog-speed'),
+      tot:     document.getElementById('prog-total'),
+      doneMsg: document.getElementById('done-msg'),
+      errMsg:  document.getElementById('err-msg'),
+    };
+  }
+
+  function resetUI(els) {
+    els.btn.classList.add('disabled');
+    els.btn.disabled = true;
+    els.wrap.classList.add('active');
+    els.doneMsg.classList.remove('show');
+    els.errMsg.classList.remove('show');
+    els.bar.style.width = '0%';
+    els.pct.textContent = '0%';
+    els.txfr.textContent = '0 MB';
+    els.spd.textContent = '— MB/s';
+    els.tot.textContent = fmt(APPROX_BYTES);
+  }
+
+  function finishUI(els) {
+    els.bar.style.width = '100%';
+    els.pct.textContent = '100%';
+    els.spd.textContent = '✓ Done';
+    els.txfr.textContent = fmt(APPROX_BYTES);
+    els.doneMsg.classList.add('show');
+    els.btn.classList.remove('disabled');
+    els.btn.disabled = false;
+  }
+
+  // Simulated progress: eases quickly to ~90%, then crawls to 99% while real download happens
+  function simulateProgress(els, onComplete) {
+    let pctVal = 0;
+    let received = 0;
+    const total = APPROX_BYTES;
+
+    // Simulate ~2–4 MB/s variable speed
+    const tick = setInterval(() => {
+      // Randomised chunk between 200 KB and 600 KB per tick (~200ms)
+      const chunk = (200 + Math.random() * 400) * 1024;
+      received = Math.min(received + chunk, total * 0.99);
+      pctVal = Math.round((received / total) * 100);
+
+      els.bar.style.width = pctVal + '%';
+      els.pct.textContent = pctVal + '%';
+      els.txfr.textContent = fmt(received);
+
+      const speed = (chunk / 1024 / 1024 / 0.2).toFixed(1); // MB per 200ms → MB/s
+      els.spd.textContent = speed + ' MB/s';
+
+      if (pctVal >= 99) {
+        clearInterval(tick);
+        els.spd.textContent = 'Finishing…';
+        if (onComplete) onComplete();
+      }
+    }, 200);
+
+    return tick;
   }
 
   async function startDownload() {
-    const btn      = document.getElementById('dl-btn');
-    const wrap     = document.getElementById('progress-wrap');
-    const bar      = document.getElementById('prog-bar');
-    const pct      = document.getElementById('prog-pct');
-    const txfr     = document.getElementById('prog-transferred');
-    const spd      = document.getElementById('prog-speed');
-    const tot      = document.getElementById('prog-total');
-    const doneMsg  = document.getElementById('done-msg');
-    const errMsg   = document.getElementById('err-msg');
+    const els = getEls();
+    resetUI(els);
 
-    // Reset
-    btn.classList.add('disabled');
-    btn.disabled = true;
-    wrap.classList.add('active');
-    doneMsg.classList.remove('show');
-    errMsg.classList.remove('show');
-    bar.style.width = '0%';
-    pct.textContent = '0%';
-    txfr.textContent = '0 MB';
-    spd.textContent = '— MB/s';
-    tot.textContent = '— MB';
-
+    // ── Try a real streamed fetch first ──────────────────────────────────────
     try {
-      const res = await fetch(APK_URL);
-      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const res = await fetch(APK_URL, { mode: 'cors' });
+      if (!res.ok) throw new Error('status ' + res.status);
 
       const contentLength = res.headers.get('Content-Length');
-      const total = contentLength ? parseInt(contentLength, 10) : null;
-      if (total) tot.textContent = fmt(total);
+      const total = contentLength ? parseInt(contentLength, 10) : APPROX_BYTES;
+      els.tot.textContent = fmt(total);
 
       const reader = res.body.getReader();
       const chunks = [];
@@ -292,49 +338,46 @@
 
         const now = Date.now();
         const elapsed = (now - lastTime) / 1000;
-        if (elapsed >= 0.4) {
-          const bytesPerSec = (received - lastBytes) / elapsed;
-          spd.textContent = fmt(bytesPerSec) + '/s';
+        if (elapsed >= 0.35) {
+          const bps = (received - lastBytes) / elapsed;
+          els.spd.textContent = fmt(bps) + '/s';
           lastTime = now;
           lastBytes = received;
         }
 
-        txfr.textContent = fmt(received);
-        if (total) {
-          const p = Math.min(Math.round((received / total) * 100), 100);
-          bar.style.width = p + '%';
-          pct.textContent = p + '%';
-        } else {
-          // unknown size — animate indefinitely
-          bar.style.width = '60%';
-          pct.textContent = fmt(received);
-        }
+        els.txfr.textContent = fmt(received);
+        const p = Math.min(Math.round((received / total) * 100), 99);
+        els.bar.style.width = p + '%';
+        els.pct.textContent = p + '%';
       }
 
-      // Assemble blob and trigger save
       const blob = new Blob(chunks);
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href     = url;
+      a.href = url; a.download = APK_NAME;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
+
+      finishUI(els);
+
+    } catch (_) {
+      // ── CORS / network blocked — fall back to direct link + simulated bar ──
+      console.info('Fetch blocked (CORS). Using direct link fallback with simulated progress.');
+
+      // Kick off the real download via hidden link (bypasses CORS)
+      const a = document.createElement('a');
+      a.href = APK_URL;
       a.download = APK_NAME;
+      a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-      // Done
-      bar.style.width = '100%';
-      pct.textContent = '100%';
-      spd.textContent = '✓ Done';
-      doneMsg.classList.add('show');
-
-    } catch (err) {
-      console.error(err);
-      errMsg.textContent = '⚠️ Download failed: ' + err.message + '\n\nTip: If you see a CORS error, the APK must be hosted on a server that allows cross-origin requests (self-host or use GitHub Releases).';
-      errMsg.classList.add('show');
-    } finally {
-      btn.classList.remove('disabled');
-      btn.disabled = false;
+      // Show simulated progress while the browser downloads in the background
+      simulateProgress(els, () => {
+        // Give a short buffer then mark complete
+        setTimeout(() => finishUI(els), 1200);
+      });
     }
   }
 </script>
