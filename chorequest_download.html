@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChoreQuest – Download</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #5E8B64;
+      --gold: #F4B942;
+      --orange: #FF6B35;
+      --bg: #0F1A0F;
+      --bg2: #162016;
+      --card: #1C2B1C;
+      --brd: rgba(255,255,255,.08);
+      --text: #F0EDE6;
+      --text2: #B8C4B8;
+      --text3: #7A8E7A;
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{min-height:100%;font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+
+    /* animated bg */
+    body::before{
+      content:'';position:fixed;inset:0;z-index:0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 20%, rgba(94,139,100,.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(244,185,66,.10) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 60% 10%, rgba(255,107,53,.07) 0%, transparent 60%);
+      pointer-events:none;
+    }
+
+    .wrap{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:0 20px 60px}
+
+    /* HEADER */
+    header{text-align:center;padding:56px 0 40px}
+    .app-icon{width:100px;height:100px;border-radius:26px;background:linear-gradient(135deg,#5E8B64,#3a6140);display:flex;align-items:center;justify-content:center;font-size:52px;margin:0 auto 22px;box-shadow:0 8px 32px rgba(94,139,100,.35),0 2px 8px rgba(0,0,0,.4);animation:floatIcon 3s ease-in-out infinite}
+    @keyframes floatIcon{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    h1{font-family:'Fredoka One',cursive;font-size:46px;letter-spacing:1px;background:linear-gradient(135deg,#F0EDE6,#F4B942);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1}
+    .tagline{font-size:17px;color:var(--text2);margin-top:10px;font-weight:700;line-height:1.4}
+
+    /* BADGES ROW */
+    .badges{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:24px 0 36px}
+    .badge{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid var(--brd);border-radius:100px;padding:7px 14px;font-size:13px;font-weight:700;color:var(--text2)}
+    .badge span{font-size:15px}
+
+    /* DOWNLOAD CARD */
+    .dl-card{background:var(--card);border:1.5px solid rgba(94,139,100,.3);border-radius:24px;padding:28px 24px;margin-bottom:16px;position:relative;overflow:hidden}
+    .dl-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--gold),var(--orange))}
+    .dl-header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+    .dl-os-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+    .android-icon{background:linear-gradient(135deg,#3ddc84,#00a86b)}
+    .dl-os-name{font-family:'Fredoka One',cursive;font-size:22px;color:var(--text)}
+    .dl-os-sub{font-size:12px;color:var(--text3);font-weight:700;margin-top:2px}
+
+    .dl-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:17px;border-radius:14px;border:none;font-family:'Nunito',sans-serif;font-size:17px;font-weight:900;cursor:pointer;text-decoration:none;transition:all .2s;position:relative;overflow:hidden}
+    .dl-btn-android{background:linear-gradient(135deg,#3ddc84,#00a86b);color:#fff;box-shadow:0 6px 24px rgba(61,220,132,.3)}
+    .dl-btn-android:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(61,220,132,.4)}
+    .dl-btn-android:active{transform:scale(.98)}
+    .dl-btn svg{width:22px;height:22px;flex-shrink:0}
+
+    /* APK info */
+    .apk-info{display:flex;gap:8px;margin-top:14px}
+    .apk-chip{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:10px;padding:9px;text-align:center}
+    .apk-chip-n{font-size:14px;font-weight:800;color:var(--text)}
+    .apk-chip-l{font-size:10px;color:var(--text3);font-weight:700;margin-top:2px}
+
+    /* iOS unavailable */
+    .ios-card{background:var(--card);border:1.5px solid var(--brd);border-radius:24px;padding:24px;margin-bottom:16px;opacity:.7}
+    .ios-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+    .ios-icon{background:linear-gradient(135deg,#555,#333)}
+    .unavail-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:5px 12px;font-size:12px;font-weight:700;color:var(--text3);margin-bottom:12px}
+    .unavail-msg{font-size:13px;color:var(--text3);line-height:1.5}
+
+    /* INSTALL GUIDE */
+    .guide-card{background:var(--card);border:1.5px solid rgba(244,185,66,.2);border-radius:24px;padding:24px;margin-bottom:16px}
+    .guide-title{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:900;margin-bottom:18px}
+    .step{display:flex;gap:13px;margin-bottom:15px;align-items:flex-start}
+    .step:last-child{margin-bottom:0}
+    .step-num{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--green),#3a6140);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;flex-shrink:0;margin-top:1px}
+    .step-text{font-size:14px;color:var(--text2);line-height:1.5;font-weight:600}
+    .step-text strong{color:var(--text)}
+
+    /* FEATURES */
+    .features{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+    .feat{background:var(--card);border:1px solid var(--brd);border-radius:16px;padding:16px;text-align:center}
+    .feat-icon{font-size:28px;margin-bottom:7px}
+    .feat-name{font-size:13px;font-weight:800;color:var(--text)}
+    .feat-desc{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4}
+
+    /* section label */
+    .section-label{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:28px 0 12px;display:flex;align-items:center;gap:8px}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--brd)}
+
+    /* footer */
+    footer{text-align:center;font-size:12px;color:var(--text3);padding-top:16px;line-height:1.8}
+
+    /* pulse ring on button */
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(61,220,132,.4)}70%{box-shadow:0 0 0 14px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+    .dl-btn-android{animation:pulse 2s infinite}
+    .dl-btn-android:hover{animation:none}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="app-icon">🏆</div>
+    <h1>ChoreQuest</h1>
+    <p class="tagline">Chores & rewards for the whole family.<br>Earn coins, climb ranks, beat your siblings!</p>
+  </header>
+
+  <div class="badges">
+    <div class="badge"><span>🪙</span> Coin System</div>
+    <div class="badge"><span>🏆</span> Leaderboard</div>
+    <div class="badge"><span>🔥</span> Streaks</div>
+    <div class="badge"><span>🏅</span> Achievements</div>
+  </div>
+
+  <!-- ANDROID DOWNLOAD -->
+  <div class="section-label">Download</div>
+  <div class="dl-card">
+    <div class="dl-header">
+      <div class="dl-os-icon android-icon"><img src="data:image/jpeg;base64,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" style="width:38px;height:38px;object-fit:contain"></div>
+      <div>
+        <div class="dl-os-name">Android</div>
+        <div class="dl-os-sub">APK · Direct Download</div>
+      </div>
+    </div>
+    <a class="dl-btn dl-btn-android" href="https://drive.google.com/uc?export=download&id=1qqd2itCt5NcBxm2BlDfUoyhgyaGwZULB" target="_blank">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.523 15.341l-1.99-3.44a.5.5 0 00-.865 0l-.746 1.29a4.978 4.978 0 01-3.844 0L9.332 11.9a.5.5 0 00-.865 0l-1.99 3.44A.5.5 0 006.91 16h10.18a.5.5 0 00.433-.659zM5.5 7.5l1.34 2.32a6.978 6.978 0 0010.32 0L18.5 7.5H5.5zM12 2L8.5 7h7L12 2z"/></svg>
+      Download for Android
+    </a>
+    <div class="apk-info">
+      <div class="apk-chip"><div class="apk-chip-n">APK</div><div class="apk-chip-l">Format</div></div>
+      <div class="apk-chip"><div class="apk-chip-n">Free</div><div class="apk-chip-l">Cost</div></div>
+      <div class="apk-chip"><div class="apk-chip-n">Android 6+</div><div class="apk-chip-l">Required</div></div>
+    </div>
+  </div>
+
+  <!-- IOS UNAVAILABLE -->
+  <div class="ios-card">
+    <div class="ios-header">
+      <div class="dl-os-icon ios-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="28" height="28"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></div>
+      <div>
+        <div class="dl-os-name" style="color:var(--text2)">iPhone / iOS</div>
+        <div class="dl-os-sub">App Store</div>
+      </div>
+    </div>
+    <div class="unavail-tag">⚠️ Not available yet</div>
+    <p class="unavail-msg">An iOS version is not currently available. Android only for now — check back later for updates!</p>
+  </div>
+
+  <!-- INSTALL GUIDE -->
+  <div class="section-label">How to Install</div>
+  <div class="guide-card">
+    <div class="guide-title">📋 Android Install Guide</div>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Tap <strong>Download for Android</strong> above and save the APK file to your phone.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Open your phone's <strong>Settings → Security</strong> and enable <strong>"Install unknown apps"</strong> for your browser or file manager.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Open your <strong>Downloads folder</strong> and tap the APK file to begin installing.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Tap <strong>Install</strong> when prompted, then <strong>Open</strong> when it's done. You're in! 🎉</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="section-label">Features</div>
+  <div class="features">
+    <div class="feat"><div class="feat-icon">🏆</div><div class="feat-name">Leaderboard</div><div class="feat-desc">Compete with brothers & sisters</div></div>
+    <div class="feat"><div class="feat-icon">🪙</div><div class="feat-name">Coin Rewards</div><div class="feat-desc">Earn coins for every chore</div></div>
+    <div class="feat"><div class="feat-icon">🔥</div><div class="feat-name">Streaks</div><div class="feat-desc">Build daily task streaks</div></div>
+    <div class="feat"><div class="feat-icon">🎁</div><div class="feat-name">Redeem Rewards</div><div class="feat-desc">Spend coins on real prizes</div></div>
+    <div class="feat"><div class="feat-icon">🏅</div><div class="feat-name">Achievements</div><div class="feat-desc">Unlock 12 unique badges</div></div>
+    <div class="feat"><div class="feat-icon">🎰</div><div class="feat-name">Lucky Spin</div><div class="feat-desc">Win bonus coins instantly</div></div>
+  </div>
+
+  <footer>
+    Made with ❤️ for families<br>
+    ChoreQuest · Free to use · Account required
+  </footer>
+</div>
+</body>
+</html>
