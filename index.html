@@ -126,6 +126,18 @@ select.inp{cursor:pointer}
 .pts-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .pts-preset{padding:6px 12px;border-radius:20px;border:1.5px solid rgba(212,155,24,.35);background:transparent;color:var(--gold);font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s}
 .pts-preset:hover,.pts-preset.sel{background:var(--gold);color:#fff;border-color:var(--gold)}
+/* family calendar */
+.cal-wrap{overflow-x:auto;margin-bottom:16px;-webkit-overflow-scrolling:touch}
+.cal-grid{display:grid;grid-template-columns:52px repeat(7,1fr);min-width:420px;border-radius:12px;overflow:hidden;border:1px solid var(--brd)}
+.cal-head{background:var(--bg2);padding:6px 3px;text-align:center;font-size:10px;font-weight:800;color:var(--text2);border-bottom:1px solid var(--brd)}
+.cal-head.today-col{color:var(--ac)}
+.cal-row-label{background:var(--bg2);padding:8px 4px;display:flex;align-items:flex-start;justify-content:center;border-right:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.cal-cell{padding:3px;border-right:1px solid var(--brd);border-bottom:1px solid var(--brd);min-height:52px;background:var(--card);vertical-align:top}
+.cal-cell.today-col{background:rgba(94,139,100,.04)}
+.cal-chip{border-radius:5px;padding:2px 5px;font-size:9px;font-weight:800;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.cal-chip.done{opacity:.45;text-decoration:line-through}
+.cal-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.cal-legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 </style>
 <div id="root"><div id="app"></div></div>
 <script>
@@ -371,7 +383,7 @@ async function doRemoveKid(kid){
 }
 async function doAddTask(){
   const title=val('att');if(!title)return setErr('Task needs a title');
-  S.tasks.push({id:uid(),gid:S.cur.id,title:title.trim(),desc:val('atd'),coins:parseInt(val('atc'))||10,to:val('ato')||'all',rec:val('atr')||'daily',completions:[]});
+  S.tasks.push({id:uid(),gid:S.cur.id,title:title.trim(),desc:val('atd'),coins:parseInt(val('atc'))||10,to:val('ato')||'all',rec:val('atr')||'daily',completions:[],created:gameDay()});
   await saveAll();S.addTask=false;showToast('Task added!');
 }
 async function doDelTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);await saveAll();render()}
@@ -715,23 +727,75 @@ function vGuardian(){
   </div>`;
   let ct='';
   if(S.gtab==='overview'){
-    const feed=getActivityFeed(u.id,8);
+    const feed=getActivityFeed(u.id,6);
+    // Build weekly calendar data
+    const KID_COLORS=['#5E8B64','#7BA3FF','#E85D75','#F4B942','#A78BFA','#FB923C'];
+    const kidColorMap={};kids.forEach((k,i)=>{kidColorMap[k.id]=KID_COLORS[i%KID_COLORS.length];});
+    const today=new Date();if(today.getHours()<1)today.setDate(today.getDate()-1);
+    const todayStr=localDateStr(today);
+    const weekStart=new Date(today);weekStart.setDate(today.getDate()-today.getDay());
+    const weekDays=[];for(let i=0;i<7;i++){const d=new Date(weekStart);d.setDate(weekStart.getDate()+i);weekDays.push(d);}
+    const DAY_LABELS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const REC_DAYS={daily:[0,1,2,3,4,5,6],weekly:[0],once:[]};
+    // For once tasks, show on the day they were added (fallback: Sun)
+    function taskShowsOnDay(t,dayIdx){
+      if(t.rec==='daily')return true;
+      if(t.rec==='weekly')return dayIdx===0;
+      if(t.rec==='once')return dayIdx===new Date(t.created||weekDays[0]).getDay();
+      return false;
+    }
+    const calGridRows=kids.map((k,ki)=>{
+      const kColor=kidColorMap[k.id];
+      const kTasks=myT.filter(t=>t.to==='all'||t.to===k.id);
+      const cells=weekDays.map((d,di)=>{
+        const dStr=localDateStr(d);const isToday=dStr===todayStr;
+        const dayTasks=kTasks.filter(t=>taskShowsOnDay(t,d.getDay()));
+        const chips=dayTasks.map(t=>{
+          const done2=t.completions?.some(c=>c.cid===k.id&&c.date===dStr);
+          return`<div class="cal-chip${done2?' done':''}" style="background:${kColor}22;color:${kColor};border:1px solid ${kColor}44" title="${esc(t.title)}">${esc(t.title.length>10?t.title.slice(0,9)+'…':t.title)}</div>`;
+        }).join('');
+        return`<div class="cal-cell${isToday?' today-col':''}">${chips||'<div style="height:10px"></div>'}</div>`;
+      }).join('');
+      return`<div class="cal-row-label"><div class="av" style="width:28px;height:28px;font-size:11px;background:${kColor}22;color:${kColor}">${k.un[0].toUpperCase()}</div></div>${cells}`;
+    }).join('');
+
     ct=`${toastH()}${missingLn()}
-    <div class="stg"><div class="sc"><div class="sn">${kids.length}</div><div class="sl">Kids</div></div><div class="sc"><div class="sn">${myT.length}</div><div class="sl">Tasks</div></div><div class="sc"><div class="sn">${myR.length}</div><div class="sl">Rewards</div></div></div>
-    <div style="background:var(--bg2);border-radius:8px;padding:11px 13px;margin-bottom:14px;font-size:13px;color:var(--text2)">Your username is <strong style="color:var(--ac)">${esc(u.un)}</strong> — share it with your kids so they can link when signing up.</div>
+    ${pend.length>0?`<div style="background:rgba(212,155,24,.1);border:1.5px solid rgba(212,155,24,.4);border-radius:10px;padding:11px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="S.gtab='requests';render()">
+      <div style="font-size:13px;font-weight:800;color:var(--gold)">🔔 ${pend.length} cash-in request${pend.length>1?'s':''} waiting!</div>
+      <span style="font-size:12px;color:var(--gold)">Review →</span>
+    </div>`:''}
+    <!-- FAMILY CALENDAR -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:14px;font-weight:800">📅 Family Week</div>
+      <div style="font-size:11px;color:var(--text3)">${weekDays[0].toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${weekDays[6].toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+    </div>
+    ${kids.length===0?`<div style="background:var(--card);border-radius:12px;border:1px solid var(--brd);padding:22px;text-align:center;color:var(--text3);font-size:13px;margin-bottom:16px">No kids linked yet — they'll appear on the calendar once they join!</div>`:`
+    <div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:7px">
+      ${kids.map(k=>`<div style="display:flex;align-items:center;gap:4px"><div class="cal-legend-dot" style="background:${kidColorMap[k.id]}"></div><span style="font-size:11px;font-weight:700;color:var(--text2)">${esc(k.un)}</span></div>`).join('')}
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-grid" style="grid-template-rows:auto${kids.map(()=>' auto').join('')}">
+        <div class="cal-head" style="border-right:1px solid var(--brd);border-bottom:1px solid var(--brd)"></div>
+        ${weekDays.map((d,i)=>{const ds=localDateStr(d);const isTod=ds===todayStr;return`<div class="cal-head${isTod?' today-col':''}" style="border-bottom:1px solid var(--brd);${isTod?'background:rgba(94,139,100,.08)':''}">${DAY_LABELS[i]}<br><span style="font-size:13px;font-weight:800;color:${isTod?'var(--ac)':'var(--text)'}">${d.getDate()}</span></div>`;}).join('')}
+        ${calGridRows}
+      </div>
+    </div>`}
+
+    <!-- KID CARDS -->
     <div style="font-size:13px;font-weight:700;margin-bottom:10px">Your Kids (${kids.length})</div>
     ${kids.length===0?`<div class="empty">No kids yet.<br>They'll appear after signing up with your username.</div>`
-    :kids.map(k=>{const rk=getRank(k.total||0);const ct2=myT.filter(t=>t.to==='all'||t.to===k.id);const dn=ct2.filter(t=>taskDone(t,k.id)).length;const str=getStreak(k.id);const wk=getWeekCoins(k.id);const kTitle=TITLES.find(t=>t.req(k.id));
+    :kids.map(k=>{const rk=getRank(k.total||0);const ct2=myT.filter(t=>t.to==='all'||t.to===k.id);const dn=ct2.filter(t=>taskDone(t,k.id)).length;const str=getStreak(k.id);const wk=getWeekCoins(k.id);const kTitle=TITLES.find(t=>t.req(k.id));const kColor=kidColorMap[k.id];
       return`<div class="kid-card" onclick="openKidProfile(${JSON.stringify(k).replace(/"/g,'&quot;')})">
-        <div class="av">${k.un[0].toUpperCase()}</div>
+        <div class="av" style="background:${kColor}22;color:${kColor}">${k.un[0].toUpperCase()}</div>
         <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><div style="font-size:14px;font-weight:700">${esc(k.un)}</div>${kTitle?`<div class="flair" style="color:${kTitle.color};background:${kTitle.bg}">${kTitle.label}</div>`:''}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:6px">
-          <span style="color:${rk.color}">${rk.emoji} ${rk.name}</span><span>${dn}/${ct2.length} tasks</span>${str>0?`<span class="streak">🔥${str}</span>`:''}
+          <span style="color:${rk.color}">${rk.emoji} ${rk.name}</span><span>${dn}/${ct2.length} tasks today</span>${str>0?`<span class="streak">🔥${str}</span>`:''}
         </div>
         <div style="font-size:10px;color:var(--text3);margin-top:2px">🪙${wk} this week · 🪙${k.total||0} all-time</div></div>
-        <div style="display:flex;align-items:center;gap:7px"><div class="chip">🪙${k.coins||0}</div><span style="color:var(--text3)">›</span></div>
+        <div style="display:flex;align-items:center;gap:7px"><div class="chip" style="background:${kColor}18;color:${kColor}">🪙${k.coins||0}</div><span style="color:var(--text3)">›</span></div>
       </div>`;}).join('')}
-    ${feed.length>0?`<div style="font-size:13px;font-weight:700;margin-top:18px;margin-bottom:10px">⚡ Recent Activity</div>
+    <div style="background:var(--bg2);border-radius:8px;padding:11px 13px;margin-bottom:14px;font-size:13px;color:var(--text2)">Your username is <strong style="color:var(--ac)">${esc(u.un)}</strong> — share it with your kids so they can link when signing up.</div>
+    ${feed.length>0?`<div style="font-size:13px;font-weight:700;margin-top:4px;margin-bottom:10px">⚡ Recent Activity</div>
     <div style="background:var(--card);border-radius:10px;border:1px solid var(--brd);padding:4px 13px">
       ${feed.map(f=>`<div class="feed-item"><div style="font-size:16px">✅</div><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${esc(f.un)}</div><div style="font-size:11px;color:var(--text3)">${esc(f.title)}</div></div><div class="chip" style="font-size:10px;padding:2px 7px">+🪙${f.coins}</div></div>`).join('')}
     </div>`:''}`;
